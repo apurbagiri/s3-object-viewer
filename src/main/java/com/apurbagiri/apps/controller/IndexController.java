@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 public class IndexController {
 
-	@RequestMapping("/")
+	@RequestMapping("/*")
 	public String index(Model model) {
 		model.addAttribute("title", "S3 Object Viewer");
 		return "index.xhtml";

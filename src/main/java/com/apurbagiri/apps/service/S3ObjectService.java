@@ -13,8 +13,12 @@ import com.apurbagiri.apps.model.AwsS3Object;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -33,12 +37,27 @@ public class S3ObjectService {
 
 	private List<AwsS3Object> filteredObjectList;
 
+	/**
+	 * Method to initiate S3Client
+	 * 
+	 * @param accessKey
+	 * @param secretKey
+	 * @param bucketRegion
+	 */
 	private void initClient(String accessKey, String secretKey, String bucketRegion) {
 		AwsBasicCredentials awsCred = AwsBasicCredentials.create(accessKey, secretKey);
 		client = S3Client.builder().credentialsProvider(StaticCredentialsProvider.create(awsCred))
 				.region(Region.of(bucketRegion)).build();
 	}
 
+	/**
+	 * Method to populate filteredObjectList from S3Client request response
+	 * 
+	 * @param bucket
+	 * @param prefix
+	 * @param dateFrom
+	 * @param dateUntil
+	 */
 	private void populateSearchResult(String bucket, String prefix, Date dateFrom, Date dateUntil) {
 		filteredObjectList = new ArrayList<>();
 		ListObjectsV2Request s3Request = ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build();
@@ -52,6 +71,7 @@ public class S3ObjectService {
 						filteredObject.setObjectKey(object.key());
 						filteredObject.setLastModified(Date.from(object.lastModified()));
 						filteredObject.setSize(object.size());
+						filteredObject.setEtag(object.eTag());
 						filteredObjectList.add(filteredObject);
 					}
 				}
@@ -59,6 +79,18 @@ public class S3ObjectService {
 		}
 	}
 
+	/**
+	 * Method to retrieve S3 search result
+	 * 
+	 * @param accessKey
+	 * @param secretKey
+	 * @param bucketRegion
+	 * @param bucket
+	 * @param prefix
+	 * @param dateFrom
+	 * @param dateUntil
+	 * @return List<AwsS3Object>
+	 */
 	public List<AwsS3Object> getSearchResult(String accessKey, String secretKey, String bucketRegion, String bucket,
 			String prefix, Date dateFrom, Date dateUntil) {
 
@@ -68,15 +100,44 @@ public class S3ObjectService {
 		return filteredObjectList;
 	}
 
-	
-	
+	/**
+	 * Method to download S3 Object
+	 * 
+	 * @param bucketName
+	 * @param keyName
+	 * @return byte[]
+	 */
+	public byte[] getObject(String bucketName, String keyName) {
+		GetObjectRequest objectRequest = GetObjectRequest.builder().key(keyName).bucket(bucketName).build();
+		ResponseBytes<GetObjectResponse> objectBytes = client.getObjectAsBytes(objectRequest);
+		byte[] data = objectBytes.asByteArray();
+		return data;
+	}
+
+	/**
+	 * Method to retrieve S3 Object as InputStream
+	 * 
+	 * @param bucketName
+	 * @param keyName
+	 * @return InputStream
+	 */
+	public ResponseInputStream<GetObjectResponse> getBiggerObject(String bucketName, String keyName) {
+		GetObjectRequest objectRequest = GetObjectRequest.builder().key(keyName).bucket(bucketName).build();
+		return client.getObject(objectRequest);
+	}
+
+	/**
+	 * Method to populate dummy data for testing
+	 * 
+	 * @param recordCount
+	 */
 	private void populateDummyData(int recordCount) {
 		filteredObjectList = new ArrayList<>();
 		for (int i = 0; i < recordCount; i++) {
 			AwsS3Object filteredObject = new AwsS3Object();
 			filteredObject.setObjectKey(UUID.randomUUID().toString());
 			filteredObject.setLastModified(new Date(Math.abs(System.currentTimeMillis() - new Random().nextLong())));
-			filteredObject.setSize(ThreadLocalRandom.current().nextLong(4));
+			filteredObject.setSize(ThreadLocalRandom.current().nextLong(9999999));
 			filteredObjectList.add(filteredObject);
 		}
 	}

@@ -14,11 +14,18 @@ public class SearchParam{
 	private String bucketName;
 	private String bucketRegion;
 	private String searchPrefix;
-	private int retrievePeriod = 1;
+	private int retrievePeriod;
 	private boolean isManualPeriod;
 	private Date dateFrom;
 	private Date dateTo;
 
+	public SearchParam()
+	{
+		//Setting defaults
+		setRetrievePeriod(5);
+		setBucketRegion("us-east-1");
+	}
+	
 	public String getAccessKey() {
 		return accessKey;
 	}
