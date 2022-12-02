@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:p="http://primefaces.org/ui">
+
+<f:view contentType="text/html;charset=UTF-8" encoding="UTF-8">
+	<h:head>
+		<title>S3 Object Viewer</title>
+		<!-- <link rel="stylesheet" href="css/theme.css" />  -->
+		<link rel="stylesheet" href="css/customStyle.css" />
+		<script type="text/javascript">
+		function start() {
+			if(PF('s3objects').value != null)
+		    PF('searchProgressDialog').show();
+		}
+		 
+		function stop() {
+		    PF('searchProgressDialog').hide();
+		}
+</script>
+	</h:head>
+	
+	<h:body>
+		<div class="card">
+				<style>
+					/* reset on the showcase style*/
+					body .ui-panelgrid .ui-panelgrid-cell {
+						background-color: transparent;
+					}
+					
+					/* example use of styles for your form */
+					.my-heading-row {
+						background-color: var(- -surface-c);
+						font-weight: bold;
+					}
+				</style>
+
+    		<h:form id="form">
+    			<p:growl id="growl" life="2000"/>
+    			<!-- <p:messages id="growl" closable="true"/>   -->
+				<p:panelGrid columns="4" id="parentPanel"
+					columnClasses="ui-grid-col-2,ui-grid-col-4,ui-grid-col-2,ui-grid-col-4"
+					layout="grid" styleClass="ui-panelgrid-blank ui-fluid"
+					style="border:0px none; background-color:transparent;">
+
+					<p:row>
+						<p:column styleClass="ui-grid-col-6" >
+							<p:panel header="SEARCH PARAMETERS">
+								<p:panelGrid columns="5">
+									<p:outputLabel for="@next" value="Search Prefix"/>
+									<p:inputText id="prefixInput" value="#{searchParam.searchPrefix}"/>
+									<p:outputLabel for="@next" value="Retrieve Period" />
+					                <p:selectOneMenu id="retrievePeriod" disabled="#{searchParam.manualPeriod}" value="#{searchParam.retrievePeriod}" style="width:150px">
+					                	<p:ajax event="itemSelect" update="@form" listener="#{objectView.onPeriodSelectionListener}"/>
+					                    <f:selectItem itemLabel="Select Period" itemValue="0" noSelectionOption="true" itemDisabled="true"/>
+					                    <f:selectItem itemLabel="Last 5 Minutes" itemValue="5" />
+					                    <f:selectItem itemLabel="Last 10 Minutes" itemValue="10" />
+					                    <f:selectItem itemLabel="Last 15 Minutes" itemValue="15" />
+					                    <f:selectItem itemLabel="Last 30 Minutes" itemValue="30" />
+					                    <f:selectItem itemLabel="Last 1 Hour" itemValue="60" />
+					                    <f:selectItem itemLabel="Last 3 Hours" itemValue="180" />
+					                    <f:selectItem itemLabel="Last 8 Hours" itemValue="480" />
+					                    <f:selectItem itemLabel="Last 24 Hours" itemValue="1440" />
+					                </p:selectOneMenu>
+									<p:selectBooleanCheckbox id="isManualPeriod" value="#{searchParam.manualPeriod}" itemLabel="Select Period Manually">
+									 	<p:ajax update="dateFrom dateTo retrievePeriod" />
+									</p:selectBooleanCheckbox>
+									<p:outputLabel for="@next" value="From" />
+									<p:datePicker id="dateFrom" value="#{searchParam.dateFrom}" showTime="true" disabled="#{!searchParam.manualPeriod}" showButtonBar="true" showIcon="true" required="#{searchParam.manualPeriod}" requiredMessage="From Date is required"/>	
+									
+									<p:outputLabel for="@next" value="To" />
+									<p:datePicker id="dateTo" value="#{searchParam.dateTo}" showTime="true" disabled="#{!searchParam.manualPeriod}" showButtonBar="true" showIcon="true" required="#{searchParam.manualPeriod}" requiredMessage="To Date is required."/>	
+																
+									
+								</p:panelGrid>
+							</p:panel>
+						</p:column>
+						<p:column styleClass="ui-grid-col-6">
+							<p:panel header="AWS S3 CONFIGURATION">
+								<p:panelGrid columns="4">
+									<p:outputLabel for="@next" value="AWS Access Key" />
+									<p:password id="accessKey" value="#{searchParam.accessKey}" toggleMask="true" redisplay="true" required="true" requiredMessage="AWS Access Key is required"/>
+
+									<p:outputLabel for="@next" value="AWS Secret Key" />
+									<p:password id="secretKey" value="#{searchParam.secretKey}" toggleMask="true" redisplay="true" required="true" requiredMessage="AWS Secret Key is required"/>
+									
+									<p:outputLabel for="@next" value="Bucket Name" />
+									<p:inputText id="bucketName" value="#{searchParam.bucketName}" required="true" requiredMessage="Bucket Name is required"/>
+
+									<p:outputLabel for="@next" value="Bucket Region" />
+									<p:inputText id="bucketRegion" value="#{searchParam.bucketRegion}" required="true" requiredMessage="Bucket Region is required"/>
+									
+								</p:panelGrid>
+
+							</p:panel>
+						</p:column>
+					</p:row>
+
+					<p:row>
+						<p:column styleClass="ui-grid-col-12">
+							<p:commandButton value="Search" styleClass="mr-2" style="width: auto" type="submit" ajax="true" update="form growl" actionListener="#{objectView.search}"  onclick="PF('searchProgressDialog').show();"/>
+							<h:outputLabel value=" " style="margin-bottom: 1px;" />
+							<p:commandButton value="Reset" type="submit" process="@form" ajax="true" styleClass="mr-2" style="width: auto" actionListener="#{objectView.reset}" update="@form" resetValues="true" immediate="true"/>
+							<!--  <p:commandButton value="Reset" styleClass="mr-2" style="width: auto" actionListener="#{objectView.reset}" update = "prefixInput retrievePeriod isManualPeriod dateFrom dateTo accessKey secretKey bucketName bucketRegion" resetValues="true"/>  -->
+						</p:column>
+					</p:row>
+						<p:dialog widgetVar="searchProgressDialog" appendTo="@(body)"
+							dynamic="true" modal="true" draggable="false" closable="false"
+							resizable="false" showHeader="true" showEffect="fade"
+							footer="Searching..." position="center">
+							<p:graphicImage value="images/ajaxload.gif" width="100%"/>
+						</p:dialog>
+					<p:row>
+						<p:column styleClass="ui-grid-col-12">
+						<p:panel header="S3 OBJECTS">
+									<p:dataTable id="s3objects" var="s3object"
+										value="#{objectView.objectList}" rowKey="#{s3object.objectKey}"
+										selection="#{objectView.selectedObject}"
+										selectionMode="single" allowUnsorting="true" sortMode="single"  showGridlines="false" 
+										rows="10" paginator="true" paginatorAlwaysVisible="false" paginatorPosition="bottom" emptyMessage="No objects to show" styleClass="table">
+										<p:column headerText="Object Key" sortBy="#{s3object.objectKey}">
+											<h:outputText value="#{s3object.objectKey}" />
+										</p:column>
+										<p:column headerText="Object Size" sortBy="#{s3object.size}" >
+											<h:outputText value="#{s3object.size}" />
+										</p:column>
+										<p:column headerText="Update Date" sortBy="#{s3object.lastModified}" sortOrder="desc">
+											<h:outputText value="#{s3object.lastModified}" />
+										</p:column>
+									</p:dataTable>
+
+									<p:contextMenu for="s3objects">
+										<p:menuitem value="Download Object" icon="pi pi-search" action="#{objectView.download}"/>
+									</p:contextMenu>
+								</p:panel>
+						</p:column>
+					</p:row>
+
+				</p:panelGrid>
+				</h:form>
+				
+			</div>
+	</h:body>
+</f:view>
+
+</html>
