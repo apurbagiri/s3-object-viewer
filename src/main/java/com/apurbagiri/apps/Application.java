@@ -1,5 +1,9 @@
 package com.apurbagiri.apps;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 
 import javax.faces.webapp.FacesServlet;
@@ -22,6 +26,7 @@ public class Application {
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
+		browse("http://localhost:8080");
 	}
 
 	@Bean
@@ -30,8 +35,7 @@ public class Application {
 		configurer.setScopes(Collections.<String, Object>singletonMap(FacesViewScope.NAME, new FacesViewScope()));
 		return configurer;
 	}
-	
-	
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Bean
 	public ServletRegistrationBean facesServletRegistraiton() {
@@ -46,13 +50,33 @@ public class Application {
 	public ServletContextInitializer servletContextInitializer() {
 		return servletContext -> {
 			servletContext.setInitParameter("com.sun.faces.forceLoadConfiguration", Boolean.TRUE.toString());
-			 //servletContext.setInitParameter("primefaces.THEME", "bootstrap");
+			// servletContext.setInitParameter("primefaces.THEME", "ui-darkness");
 			servletContext.setInitParameter("primefaces.CLIENT_SIDE_VALIDATION", Boolean.TRUE.toString());
 			servletContext.setInitParameter("javax.faces.FACELETS_SKIP_COMMENTS", Boolean.TRUE.toString());
 			servletContext.setInitParameter("primefaces.FONT_AWESOME", Boolean.TRUE.toString());
 			servletContext.setInitParameter("primefaces.UPLOADER", "commons");
 		};
 	}
-	
-	
+
+	/**
+	 * Open default browser with specified url
+	 * 
+	 * @param url
+	 */
+	public static void browse(String url) {
+		if (Desktop.isDesktopSupported()) {
+			try {
+				Desktop.getDesktop().browse(new URI(url));
+			} catch (IOException | URISyntaxException e) {
+				e.printStackTrace();
+			}
+		} else {
+			try {
+				Runtime.getRuntime().exec("rundll32 url.dll, FileProtocolHandler " + url);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 }
